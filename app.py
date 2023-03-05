@@ -1,22 +1,16 @@
 # -*- coding: utf-8 -*-
-import website
+from website import Website
+from students import Student
+from groups import Group
+
 from flask import Flask, jsonify, redirect, render_template, request, session, json
 
 from colorama import init as colorama_init
 from colorama import Fore
 from colorama import Style
 
-import base64
-import hashlib
-import hmac
-
-class PSWHash256:
-    def getHash(self, passwrd):
-        passwrd = str.encode(passwrd)
-        hash_psw = hmac.new(app.secret_key, msg=passwrd, digestmod=hashlib.sha256).digest()
-        return base64.b64encode(hash_psw).decode()
-
 app = Flask(__name__, static_url_path='/static')
+website = Website("MyWebsite")
 UPLOAD_FOLDER = '/uploads'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -29,21 +23,29 @@ if __name__ == '__main__':
     app.run(port=80)
 
 #MAIN
-@app.route('/',  methods=["POST", "GET"])
+@app.route('/',  methods=["GET"])
 def index():
+    if(website.admin.adminCheck()):
+        return "Вы админ!"
     return "Its working!"
 
-# addSudent() func
+# POSTS routs
 @app.route("/add-student", methods=["POST", "GET"])
-def addSudent():
-    student_name = request.args.get("student-name")
-    student_lastname = request.args.get("student-lastname")
-    student_fathername = request.args.get("student-fathername")
-
-    if(website.adminCheck()):
-        return website.addStudent(student_name, student_lastname, student_fathername)
+def addStudent():
+    group_id = request.args.get("group")
+    student = Student(request.args.get("student-name"), request.args.get("student-lastname"), request.args.get("student-fathername"))
+    if(website.admin.adminCheck()):
+        return website.post.addStudent(student, group_id.lower())
     return "Err: Вы не админ или слишком частое подлючение!", 400
 
+@app.route("/add-group", methods=["POST", "GET"])
+def addGroup():
+    group = Group(request.args.get("speciality"), request.args.get("course"), request.args.get("number"))
+    if(website.admin.adminCheck()):
+        return website.post.addGroup(group)
+    return "Err: Вы не админ или слишком частое подлючение!", 400
+
+# ADMINS logins routs
 @app.route("/admin-login", methods=["POST", "GET"])
 def adminLogin():
     admin_username = request.args.get("adm-username")
@@ -54,7 +56,7 @@ def adminLogin():
 
 @app.route("/admin-unlogin", methods=["POST", "GET"])
 def adminUnlogin():
-    if(website.adminCheck()):
-        website.adminUnloginAll()
+    if(website.admin.adminCheck()):
+        website.admin.adminUnloginAll()
         return "Вы больше не админ!", 503
     return "Err: Вы не админ или слишком частое подлючение!", 400

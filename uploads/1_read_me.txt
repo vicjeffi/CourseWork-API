@@ -4,7 +4,7 @@
 login:password
 
 2 - groups = >
-group_key:full_name([specialization] & "-" & [course] & [number]):specialization:course:number:isLearning(is still learning in collage)
+group_key:full_name([course] & [number]):specialization:course:number:isLearning(is still learning in collage)
 
 3 - students =>
 num_key:groups.group_key:last-name:first-name:father-name:isLearning(is still learning in collage)
