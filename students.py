@@ -1,4 +1,4 @@
-import uuid
+import uuid, json
 class Student:
     group = ""
     def __init__(self, firstname, lastname, fathername):
@@ -10,6 +10,10 @@ class Student:
     def setGroup(self, groupId):
         if(groupId):
             self.group = groupId
+    
+    def setId(self, Id):
+        if(Id):
+            self.id = Id
 
     def __str__(self):
         return f'id:{self.id} ' \
@@ -17,3 +21,7 @@ class Student:
                f'Lastname: {self.lastname}; ' \
                f'Fathername: {self.fathername}' \
                f'Group: {self.group}; '
+    
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, 
+            sort_keys=True, indent=4)

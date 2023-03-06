@@ -1,8 +1,8 @@
 from antispam import antiSpam
-import students
-import groups
+from students import Student
+from groups import Group
 
-from flask import request
+from flask import request, jsonify
 import codecs
 
 from colorama import init as colorama_init
@@ -64,8 +64,52 @@ class Website:
             print(Fore.RED + "Внимание! Не успешный вход админа: " + username + Style.RESET_ALL + "\n")
             return False
     
+    # ПРОВЕРИТЬ КАК РАБОТАЕТ ГЕТЫ ДОМА
     class Get:
-        pass
+        def getStudentById(self, student_id):
+            if(student_id):
+                student_db_read = codecs.open('uploads/students.txt', 'r', encoding="utf-8")
+                for line in student_db_read.readlines():
+                    cutLines = line.split(":")
+                    if(cutLines[0] == student_id):
+                        print(self.getStudentById.__name__ + " удачно!" + "\n")
+                        student = Student(cutLines[2], cutLines[3], cutLines[4])
+                        student.setId(student_id)
+                        return student.toJSON()
+            return "Вы не ввели индекс ученика", 401
+
+        def getStudentByGroupAndIndex(self, group_id, student_index):
+            if(group_id and student_index):
+                if(student_index < 0 ):
+                    return "Индекс должен быть больше нуля", 401
+                groupIndex = ""
+                group_db_read = codecs.open('uploads/groups.txt', 'r', encoding="utf-8")
+                lines = group_db_read.readlines()
+                for line in lines:
+                    cutLines = line.split(":")
+                    if (cutLines[1].lower() == group_id or cutLines[0].lower() == group_id):
+                        groupIndex = cutLines[0]
+                        break
+                if(groupIndex == ""):
+                    print(self.addStudent.__name__ + " неудачно!" + "\n")
+                    return "Не правильный индекс или название группы", 402
+                # ДОДЕЛАТЬ
+                cashIndex = 0
+                student_db_read = codecs.open('uploads/students.txt', 'r', encoding="utf-8")
+                for line in student_db_read.readlines():
+                    cutLines = line.split(":")
+                    if(cutLines[0] == groupIndex):
+                        if(student_index == cashIndex):
+                            print(self.getStudentById.__name__ + " удачно!" + "\n")
+                            student = Student(cutLines[2], cutLines[3], cutLines[4])
+                            student.setId(cutLines[0])
+                            student.setGroup(cutLines[1])
+                            return student.toJSON()
+                    cashIndex += 1
+                return "Ученика под таких номером нету", 403
+            return "Вы не ввели индекс ученика или группы", 401
+        
+        #GET индекса группы по названию
         
     class Post:
         def addStudent(self, student, group_id):
@@ -74,16 +118,16 @@ class Website:
                 group_db_read = codecs.open('uploads/groups.txt', 'r', encoding="utf-8")
                 lines = group_db_read.readlines()
                 for line in lines:
-                    lines = line.split(":")
-                    if (lines[1].lower() == group_id or lines[0].lower() == group_id):
+                    cutLines = line.split(":")
+                    if (cutLines[1].lower() == group_id or cutLines[0].lower() == group_id):
                         isGroup = True
                         break
                 if(not isGroup):
                     print(self.addStudent.__name__ + " неудачно!" + "\n")
-                    return "Не правильный индекс или название группы", 401
+                    return "Не правильный индекс или название группы", 402
 
                 students_db_write = codecs.open('uploads/students.txt', 'a', encoding="utf-8")
-                students_db_write.writelines(str(student.id) + ":" + student.firstname + ":" + student.lastname + ":" + student.fathername + ":" + str(True) + "\n")
+                students_db_write.writelines(str(student.id) + ":" + group_id + ":" + student.firstname + ":" + student.lastname + ":" + student.fathername + ":" + str(True) + "\n")
                 students_db_write.close()
 
                 print(self.addStudent.__name__ + " удачно!" + "\n")

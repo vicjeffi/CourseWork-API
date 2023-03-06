@@ -7,7 +7,7 @@ login:password
 group_key:full_name([course] & [number]):specialization:course:number:isLearning(is still learning in collage)
 
 3 - students =>
-num_key:groups.group_key:last-name:first-name:father-name:isLearning(is still learning in collage)
+num_key:groups.group_key:first-name:last-name:father-name:isLearning(is still learning in collage)
 
 /add-student?adm-username=admin&adm-password=123459BVA&student-name=Григорий&student-lastname=Гуськов&student-fathername=Олегович
 
