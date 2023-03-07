@@ -69,7 +69,9 @@ class Website:
         def getStudentById(self, student_id):
             if(student_id):
                 student_db_read = codecs.open('uploads/students.txt', 'r', encoding="utf-8")
-                for line in student_db_read.readlines():
+                lines = student_db_read.readlines()
+                student_db_read.close()
+                for line in lines:
                     cutLines = line.split(":")
                     if(cutLines[0] == student_id):
                         print(self.getStudentById.__name__ + " удачно!" + "\n")
@@ -85,6 +87,7 @@ class Website:
                 groupIndex = ""
                 group_db_read = codecs.open('uploads/groups.txt', 'r', encoding="utf-8")
                 lines = group_db_read.readlines()
+                group_db_read.close()
                 for line in lines:
                     cutLines = line.split(":")
                     if (cutLines[1].lower() == group_id or cutLines[0].lower() == group_id):
@@ -96,7 +99,9 @@ class Website:
                 # ДОДЕЛАТЬ
                 cashIndex = 0
                 student_db_read = codecs.open('uploads/students.txt', 'r', encoding="utf-8")
-                for line in student_db_read.readlines():
+                lines = student_db_read.readlines()
+                student_db_read.close()
+                for line in lines:
                     cutLines = line.split(":")
                     if(cutLines[0] == groupIndex):
                         if(student_index == cashIndex):
@@ -110,6 +115,18 @@ class Website:
             return "Вы не ввели индекс ученика или группы", 401
         
         #GET индекса группы по названию
+        def getGroupIndexByName(self, group_name):
+            if(group_name):
+                group_db_read = codecs.open('uploads/groups.txt', 'r', encoding="utf-8")
+                lines = group_db_read.readlines()
+                group_db_read.close()
+                for line in lines:
+                    cutLines = line.split(":")
+                    if (cutLines[1].lower() == group_name.lower()):
+                        return cutLines[0]
+                return "Группы c таким именем не существует!", 405
+            return "Вы не ввели имя группы!", 405
+        
         
     class Post:
         def addStudent(self, student, group_id):
@@ -134,13 +151,24 @@ class Website:
                 return "Ученик " + student.lastname + " был добавлен под индексом " + str(student.id), 201
 
             print(self.addStudent.__name__ + " не удачно!" + "\n")
-            return "Err: Вы не указали имя, фамилию или отчество студента!", 400
+            return "Вы не указали имя, фамилию или отчество студента!", 400
         
         def addGroup(self, group):
             if(group.number and group.speciality and group.course):
                 group_db_write = codecs.open('uploads/groups.txt', 'a', encoding="utf-8")
                 group_db_write.writelines(str(group.id) + ":" + group.speciality + "-" + group.course + group.number + ":" + group.speciality + ":" + group.course + ":" + group.number + ":" + str(True) + "\n")
+                group_db_write.close()
                 print(self.addGroup.__name__ + " удачно!" + "\n")
                 return "Группа " + str(group) + " успешно добавлена под индексом " + group.id, 213
             print(self.addGroup.__name__ + " неудачно!" + "\n")
             return "Вы не указали номер группы", 402
+        
+        def addDiscipline(self, discipline):
+            if(discipline.name):
+                discipline_db_write = codecs.open('uploads/disciplines.txt', 'a', encoding="utf-8")
+                discipline_db_write.writelines(str(discipline.id) + ":" + discipline.name + "\n")
+                discipline_db_write.close()
+                print(self.addDiscipline.__name__ + " удачно!" + "\n")
+                return "Дисциплина " + str(discipline) + " успешно добавлена под индексом " + discipline.id, 220
+            print(self.addDiscipline.__name__ + " неудачно!" + "\n")
+            return "Вы не ввели название дисциплины", 406

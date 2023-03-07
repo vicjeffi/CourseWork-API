@@ -2,6 +2,7 @@
 from website import Website
 from students import Student
 from groups import Group
+from discipline import Discipline
 
 from flask import Flask, jsonify, redirect, render_template, request, session, json
 
@@ -35,7 +36,7 @@ def index():
 @app.route("/add-student", methods=["POST", "GET"])
 def addStudent():
     group_id = request.args.get("group")
-    student = Student(request.args.get("student-name"), request.args.get("student-lastname"), request.args.get("student-fathername"))
+    student = Student(request.args.get("name"), request.args.get("lastname"), request.args.get("fathername"))
     if(website.admin.adminCheck()):
         return website.post.addStudent(student, group_id.lower())
     return "Err: Вы не админ или слишком частое подлючение!", 400
@@ -48,12 +49,19 @@ def addGroup():
         return website.post.addGroup(group)
     return "Err: Вы не админ или слишком частое подлючение!", 400
 
+@app.route("/add-discipline", methods=["POST", "GET"])
+def addDiscipline():
+    if(website.admin.adminCheck()):
+        discipline = Discipline(request.args.get("name"))
+        website.post.addDiscipline(discipline)
+    return "Err: Вы не админ или слишком частое подлючение!", 400
+
 # ADMINS logins routs
 #
 @app.route("/admin-login", methods=["POST", "GET"])
 def adminLogin():
-    admin_username = request.args.get("adm-username")
-    admin_password = request.args.get("adm-password")
+    admin_username = request.args.get("username")
+    admin_password = request.args.get("password")
     if(website.adminLogin(admin_username, admin_password, adminLogin.__name__)):
         return "Теперь вы админ!", 501
     return "Не правильный логин или пороль!", 502
