@@ -82,7 +82,7 @@ class Website:
 
         def getStudentByGroupAndIndex(self, group_id, student_index):
             if(group_id and student_index):
-                if(student_index < 0 ):
+                if(int(student_index) < 0):
                     return "Индекс должен быть больше нуля", 401
                 groupIndex = ""
                 group_db_read = codecs.open('uploads/groups.txt', 'r', encoding="utf-8")
@@ -90,11 +90,11 @@ class Website:
                 group_db_read.close()
                 for line in lines:
                     cutLines = line.split(":")
-                    if (cutLines[1].lower() == group_id or cutLines[0].lower() == group_id):
+                    if (cutLines[1].lower() == group_id.lower() or cutLines[0].lower() == group_id.lower()):
                         groupIndex = cutLines[0]
                         break
                 if(groupIndex == ""):
-                    print(self.addStudent.__name__ + " неудачно!" + "\n")
+                    print(self.getGroupIndexByName.__name__ + " неудачно!" + "\n")
                     return "Не правильный индекс или название группы", 402
                 # ДОДЕЛАТЬ
                 cashIndex = 0
@@ -103,19 +103,19 @@ class Website:
                 student_db_read.close()
                 for line in lines:
                     cutLines = line.split(":")
-                    if(cutLines[0] == groupIndex):
-                        if(student_index == cashIndex):
+                    if(cutLines[1] == groupIndex):
+                        if(int(student_index) == cashIndex):
                             print(self.getStudentById.__name__ + " удачно!" + "\n")
                             student = Student(cutLines[2], cutLines[3], cutLines[4])
                             student.setId(cutLines[0])
                             student.setGroup(cutLines[1])
                             return student.toJSON()
-                    cashIndex += 1
+                        cashIndex += 1
                 return "Ученика под таких номером нету", 403
             return "Вы не ввели индекс ученика или группы", 401
         
         #GET индекса группы по названию
-        def getGroupIndexByName(self, group_name):
+        def getGroupByName(self, group_name):
             if(group_name):
                 group_db_read = codecs.open('uploads/groups.txt', 'r', encoding="utf-8")
                 lines = group_db_read.readlines()
@@ -123,7 +123,16 @@ class Website:
                 for line in lines:
                     cutLines = line.split(":")
                     if (cutLines[1].lower() == group_name.lower()):
-                        return cutLines[0]
+                        group = Group(cutLines[2], cutLines[3], cutLines[4])
+                        group.setId(cutLines[0])
+                        student_db_read = codecs.open('uploads/students.txt', 'r', encoding="utf-8")
+                        lines = student_db_read.readlines()
+                        student_db_read.close()
+                        for line in lines:
+                            cutLines = line.split(":")
+                            if(cutLines[1] == group.id):
+                                group.setStudents(group.students_count + 1)
+                        return group.toJSON()
                 return "Группы c таким именем не существует!", 405
             return "Вы не ввели имя группы!", 405
         
@@ -151,7 +160,14 @@ class Website:
                 return "Ученик " + student.lastname + " был добавлен под индексом " + str(student.id), 201
 
             print(self.addStudent.__name__ + " не удачно!" + "\n")
-            return "Вы не указали имя, фамилию или отчество студента!", 400
+            if(not student.firstname):
+                return "Вы не указали имя студента!", 400
+            if(not student.lastname):
+                return "Вы не указали фамилию студента!", 400
+            if(not student.fathername):
+                return "Вы не указали отчество студента!", 400
+            if(not group_id):
+                return "Вы не указали группу студента!", 400
         
         def addGroup(self, group):
             if(group.number and group.speciality and group.course):
@@ -161,7 +177,12 @@ class Website:
                 print(self.addGroup.__name__ + " удачно!" + "\n")
                 return "Группа " + str(group) + " успешно добавлена под индексом " + group.id, 213
             print(self.addGroup.__name__ + " неудачно!" + "\n")
-            return "Вы не указали номер группы", 402
+            if(not group.number):
+                return "Вы не указали номер!", 400
+            if(not group.speciality):
+                return "Вы не указали специальность!", 400
+            if(not group.course):
+                return "Вы не указали курс группы!", 400
         
         def addDiscipline(self, discipline):
             if(discipline.name):

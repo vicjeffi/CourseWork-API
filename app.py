@@ -2,7 +2,7 @@
 from website import Website
 from students import Student
 from groups import Group
-from discipline import Discipline
+from disciplines import Discipline
 
 from flask import Flask, jsonify, redirect, render_template, request, session, json
 
@@ -38,7 +38,7 @@ def addStudent():
     group_id = request.args.get("group")
     student = Student(request.args.get("name"), request.args.get("lastname"), request.args.get("fathername"))
     if(website.admin.adminCheck()):
-        return website.post.addStudent(student, group_id.lower())
+        return website.post.addStudent(student, group_id)
     return "Err: Вы не админ или слишком частое подлючение!", 400
 
 #
@@ -75,15 +75,20 @@ def adminUnlogin():
     return "Err: Вы не админ или слишком частое подлючение!", 400
 # GETS routs
 
-#
-@app.route("/get-student-by-ids", methods=["GET"])
+# http://127.0.0.1:5000/api/get-student-by-ids?group_index=%D0%B8%D1%81%D0%BF-372&student_index=0
+@app.route("/api/get-student-by-ids", methods=["GET"])
 def getStudent():
     group_id = request.args.get("group_index")
     student_index = request.args.get("student_index")
     if(website.admin.adminCheck()):
-        return website.get.getStudentByGroupAndIndex(group_id.lower(), student_index)
+        return website.get.getStudentByGroupAndIndex(group_id, student_index)
     return "Err: Вы не админ или слишком частое подлючение!", 400
 
+@app.route("/api/get-group", methods=["GET"])
+def getGroup():
+    if(website.admin.adminCheck()):
+        return website.get.getGroupByName(request.args.get("group_name"))
+    return "Err: Вы не админ или слишком частое подлючение!", 400
 # 404
 #
 @app.errorhandler(404)
