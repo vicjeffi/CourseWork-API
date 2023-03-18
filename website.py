@@ -22,6 +22,12 @@ class Website:
         # подключена antiSpam система!
         # - проверяет доступ админа к управнию системы
         # - выводит сообщения о попытке клиента, доступе и резутата проверки антиспам системы
+
+        def checkLogin(self):
+            return jsonify(
+                admin = self.adminCheck(),
+                ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+            )
         def adminUnloginAll(self):
             admin_logins = codecs.open('uploads/admins_login.txt', 'w', encoding="utf-8")
             admin_logins.close()
@@ -41,28 +47,25 @@ class Website:
                     return True
             return False
 
-        def adminLogin(self, website, username, password, text):
+        def adminLogin(self, username, password):
+            if(not username or not password):
+                return "Не указан логин или пороль", 400
             client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
             print("\n" + "Клиент: " + client_ip)
-            print(Fore.CYAN + "\nПопытка входа админа: " + username + ":" + password + " с целью: '" + text + "'" + Style.RESET_ALL)
-            if(username != "" and username and password != "" and password):
-                admin_db = open('uploads/admins.txt', 'r')
-
-                #Добавить юзабельность хэшеру!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                #hasher = PSWHash256()
-                
-                for line in admin_db:
-                    user = line.split(':')
-                    if(user[0] == username): #хэшер здесь!
-                        if(user[1] == password): #и здесь!
-                            print(Fore.GREEN + "Успешный вход админа: " + username + Style.RESET_ALL)
-                            admin_db.close()
-                            website.ad.adminLoginAdd(client_ip)
-                            return True
-                        print(Fore.RED + "Не правильный пороль!" + Style.RESET_ALL)
-            antiSpam.Add(client_ip)
-            print(Fore.RED + "Внимание! Не успешный вход админа: " + username + Style.RESET_ALL + "\n")
-            return False
+            print(Fore.CYAN + "\nПопытка входа админа: " + username + ":" + password + Style.RESET_ALL)
+            admin_db = open('uploads/admins.txt', 'r')
+            for line in admin_db:
+                user = line.split(':')
+                if(user[0] == username):
+                    if(user[1] == password):
+                        print(Fore.GREEN + "Успешный вход админа: " + username + Style.RESET_ALL)
+                        admin_db.close()
+                        self.adminLoginAdd(client_ip)
+                        return "Успешный вход!"
+                    print(Fore.RED + "Не правильный пороль!" + Style.RESET_ALL)
+                    print(Fore.RED + "Внимание! Не успешный вход админа: " + username + Style.RESET_ALL + "\n")
+                    return "Не успешный вход!"
+            
     
     # ПРОВЕРИТЬ КАК РАБОТАЕТ ГЕТЫ ДОМА
     class Get:

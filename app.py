@@ -6,9 +6,6 @@ from disciplines import Discipline
 
 from flask import Flask, jsonify, redirect, render_template, request, session, json
 
-from colorama import init as colorama_init
-from colorama import Fore
-from colorama import Style
 
 app = Flask(__name__, static_url_path='/static')
 website = Website("MyWebsite")
@@ -27,9 +24,7 @@ if __name__ == '__main__':
 #
 @app.route('/',  methods=["GET"])
 def index():
-    if(website.admin.adminCheck()):
-        return "Вы админ!"
-    return "Its working!"
+    return website.admin.checkLogin()
 
 # POSTS routs
 #
@@ -58,21 +53,19 @@ def addDiscipline():
 
 # ADMINS logins routs
 #
-@app.route("/admin-login", methods=["POST", "GET"])
+@app.route("/login", methods=["POST", "GET"])
 def adminLogin():
     admin_username = request.args.get("username")
     admin_password = request.args.get("password")
-    if(website.adminLogin(admin_username, admin_password, adminLogin.__name__)):
-        return "Теперь вы админ!", 501
-    return "Не правильный логин или пороль!", 502
+    return website.admin.adminLogin(admin_username, admin_password)
 
 #
-@app.route("/admin-unlogin", methods=["POST", "GET"])
+@app.route("/unlogin", methods=["POST", "GET"])
 def adminUnlogin():
     if(website.admin.adminCheck()):
         website.admin.adminUnloginAll()
-        return "Вы больше не админ!", 503
-    return "Err: Вы не админ или слишком частое подлючение!", 400
+        return "Вы больше не админ", 200
+    return "Вы и так не админ", 200
 # GETS routs
 
 # http://127.0.0.1:5000/api/get-student-by-ids?group_index=%D0%B8%D1%81%D0%BF-372&student_index=0

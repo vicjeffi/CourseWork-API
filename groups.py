@@ -8,7 +8,6 @@ class Group:
         self.number = number
         self.speciality = speciality
         
-
     def setId(self, id):
         self.id = id
 
