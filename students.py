@@ -24,3 +24,6 @@ class Student:
     
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, indent=4)
+    
+    def getRandomId():
+        return uuid.uuid4().hex
