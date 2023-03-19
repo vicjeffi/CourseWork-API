@@ -22,6 +22,7 @@ class Website:
         self.post = self.Post()
         self.get = self.Get()
         self.admin = self.Admin()
+        print(Fore.CYAN + "Starting server, master!" + Style.RESET_ALL)
 
     class Admin:
         def getClientId(self):

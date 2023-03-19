@@ -5,6 +5,7 @@ from groups import Group
 from disciplines import Discipline
 
 from flask import Flask, jsonify, redirect, render_template, request, session, json
+from waitress import serve
 
 from transliterate import translit
 
@@ -17,9 +18,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config.from_object(__name__)
 
 app.secret_key = b'/*/6379&63#=-;fg'
-
-if __name__ == '__main__':
-    app.run(port=80)
 
 #MAIN
 #
@@ -102,4 +100,6 @@ def getGroup():
 def page_not_found(e):
     # note that we set the 404 status explicitly
     return jsonify(message=str(e)), 404
-        
+
+if __name__ == '__main__':
+    serve(app, port=8080, host="0.0.0.0")
