@@ -11,6 +11,7 @@ from colorama import Style
 
 import secrets
 import string
+from datetime import datetime
 
 from transliterate import translit
 
@@ -185,15 +186,16 @@ class Website:
             return jsonify(message="Группы c таким именем не существует!"), 200
         
     class Post:
-        def addAttendance(self, student_id, discipline_name):
-            if(Website.Admin.checkLogin(True) != "teacher"):
+        def addAttendance(self, student_id, discipline_name, time):
+            if(not student_id or not discipline_name or discipline_name.__contains__(":")):
                 print(self.addAttendance.__name__ + " неудачно!" + "\n")
-                return jsonify(message="Учитель, войдите в аккаунт!"), 200
-            if(not student_id or not discipline_name):
-                print(self.addAttendance.__name__ + " неудачно!" + "\n")
-                return jsonify(message="Вы не введи данные"), 200
-            attendance_db = codecs.open('uploads/groups.txt', 'a', encoding="utf-8")
-            attendance_db.writelines(Student.getRandomId + ":" 
+                return jsonify(message="Вы не введены корректные данные"), 200
+            attendance_db = codecs.open('uploads/attendance.txt', 'a', encoding="utf-8")
+            if(not time):
+                time = datetime.now()
+                time = time.strftime("%H/%M/%S")
+            attendance_db.writelines(Student.getRandomId() + ":" 
+                                     + str(time) + ":"
                                      + student_id + ":" 
                                      + discipline_name + ":" 
                                      + "Нет причины" + ":" + "\n")

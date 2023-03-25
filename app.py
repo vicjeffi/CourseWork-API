@@ -6,11 +6,12 @@ from disciplines import Discipline
 
 from flask import Flask, jsonify, redirect, render_template, request, session, json
 from waitress import serve
+import socket 
 
 from transliterate import translit
 
 app = Flask(__name__, static_url_path='/static')
-website = Website("MyWebsite")
+website = Website("mywebsite")
 UPLOAD_FOLDER = '/uploads'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -65,6 +66,14 @@ def addDiscipline():
     return jsonify(message="Вы не админ"), 400
 
 #
+@app.route("/add-attendance", methods=["POST", "GET"])
+def addAttendance():
+    print(website.admin.getClientStatus())
+    if(website.admin.getClientStatus() in {"admin", "teacher"}):
+        website.post.addAttendance(request.args.get("student-id"), request.args.get("discipline"), request.args.get("time"))
+    return jsonify(message="Вы не админ"), 400
+
+#
 @app.route("/login", methods=["POST", "GET"])
 def Login():
     username = request.args.get("username")
@@ -82,10 +91,8 @@ def adminUnlogin():
 # Проверить с 19 марта
 @app.route("/api/get-student-by-ids", methods=["GET"])
 def getStudent():
-    group_id = request.args.get("group_index")
-    student_index = request.args.get("student_index")
     if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
-        return website.get.getStudentByGroupAndId(group_id, student_index)
+        return website.get.getStudentByGroupAndId(request.args.get("group-id"), request.args.get("student-id"))
     return jsonify(message="Вы не учитель"), 400
 
 # Проверить с 19 марта
@@ -102,4 +109,10 @@ def page_not_found(e):
     return jsonify(message=str(e)), 404
 
 if __name__ == '__main__':
-    serve(app, port=8080, host="0.0.0.0")
+    hostname = socket.gethostname()
+    print(hostname)
+    print("Ip: "+ str(socket.gethostbyname(hostname)))
+    _port = 5000
+    print("Port: " + str(_port))
+    serve(app, port=_port, host="0.0.0.0")
+    #flask run --host=0.0.0.0 -p 8080
