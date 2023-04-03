@@ -1,15 +1,15 @@
 import uuid, json
-class Student:
+class Teacher:
+    groups = []
     def __init__(self, firstname : str, lastname : str, fathername : str):
         self.id = uuid.uuid4().hex
         self.firstname = firstname
         self.lastname = lastname
         self.fathername = fathername
-        self.group = ""
 
-    def setGroup(self, groupId : str):
+    def setGroups(self, groupId : str):
         if(groupId):
-            self.group = groupId
+            self.groups.__add__(groupId)
     
     def setId(self, Id : str):
         if(Id):
@@ -23,7 +23,7 @@ class Student:
                f'Group: {self.group}; '
     
     def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__, indent=4)
     
     def getRandomId():
         return uuid.uuid4().hex

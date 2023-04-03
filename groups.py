@@ -1,17 +1,16 @@
 import uuid, json
 
 class Group:
-    students_count = 0
-    def __init__(self, speciality, course, number):
+    def __init__(self, speciality : str, course : str, number : str):
         self.id = uuid.uuid4().hex
         self.course = course
         self.number = number
         self.speciality = speciality
         
-    def setId(self, id):
+    def setId(self, id : str):
         self.id = id
 
-    def setStudents(self, count):
+    def setStudents(self, count : int):
         self.students_count = count
 
     def __str__(self):
