@@ -15,7 +15,7 @@ num_key:groups.group_key:first-name:last-name:father-name:isLearning(is still le
 num_key:password:login:last-name:first-name:father-name:bool(is still learning in collage):discipline.num_key:
 
 5 - attendance =>
-student.num_key:discipline.name:reason-text:
+attendance.num_key:student.num_key:discipline.num_key:datetime:reason-text:
 
 6 - discipline =>
 num_key:discipline-name

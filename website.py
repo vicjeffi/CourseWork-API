@@ -30,7 +30,6 @@ class Website:
         print(Fore.CYAN + "Starting server, master!" + Style.RESET_ALL)
 
     class Admin:
-
         #ALl!
         def getClientId(self):
             if(not self.getIsClientLogined()):
@@ -101,7 +100,6 @@ class Website:
         # CLIENT!
         def Login(self, username : str, password : str):
             if(not username or not password):
-                print(self.Login.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не ввели данные"), 400
             client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
             print("\n" + "Клиент: " + client_ip)
@@ -115,14 +113,13 @@ class Website:
                         users_db.close()
                         self.LoginAdd(client_ip, user[2], user[3])
                         return jsonify(message="Успешный вход, вы " + user[2]), 201
-            print(Fore.RED + "Внимание! Не успешный вход: " + username + Style.RESET_ALL + "\n")
+            print(Fore.RED + "Не успешный вход: " + username + Style.RESET_ALL + "\n")
             return jsonify(message="Данные не совпадают"), 400
 
     class Get:
         # CLIENT!
         def getUserById(self, user_id : str):
             if(not user_id):
-                print(self.getStudentById.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не ввели индекс!"), 400
             user_db_read = codecs.open(Website.uploads + '/users.txt', 'r', encoding="utf-8")
             lines = user_db_read.readlines()
@@ -165,7 +162,6 @@ class Website:
         #CLIENT!
         def getStudentsByGroup(self, group_index : str):
             if(not group_index ):
-                print(self.getStudentByGroupAndId.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не ввели индекс группы"), 400
             
             myDict = {'Student': [{'id': 'None', 'firstname': 'None', 'lastname': 'None', 'fathername': 'None'}]}
@@ -186,57 +182,112 @@ class Website:
 
         #ДОДЕЛАТЬ! ПЕРЕДЕЛАТЬ С 2 АПРЕЛЯ
         #CLIENT!
-        def getGroupByName(self, group_name : str):
-            if(not group_name):
-                print(self.getGroupByName.__name__ + " неудачно!" + "\n")
+        def getGroupByIndex(self, group_index : str):
+            if(not group_index):
                 return jsonify(message="Вы не ввели имя группы!"), 400
             group_db_read = codecs.open(Website.uploads + '/groups.txt', 'r', encoding="utf-8")
             lines = group_db_read.readlines()
             group_db_read.close()
             for line in lines:
                 cutLines = line.split(":")
-                if (cutLines[1].lower() == group_name.lower()):
+                if (cutLines[0] == group_index):
                     group = Group(cutLines[2], cutLines[3], cutLines[4])
-                    group.setId(cutLines[0])
-                    student_db_read = codecs.open(Website.uploads + '/students.txt', 'r', encoding="utf-8")
-                    lines = student_db_read.readlines()
-                    student_db_read.close()
-                    for line in lines:
-                        cutLines = line.split(":")
-                        if(cutLines[1] == group.id):
-                            group.setStudents(group.students_count + 1)
-                    return group.toJSON(), 201
-            return jsonify(message="Группы c таким именем не существует!"), 400
+                    myDict = {'id': cutLines[0], 'group': cutLines[2], 'course': cutLines[3], 'number': cutLines[4]}
+                    return json.dumps(myDict,sort_keys=False), 200
+            jsonify(message="Такой группы не существует!"), 400
 
         #CLIENT!
         def getAllAttendance(self, student_index : str):
-            pass
+            if(not student_index):
+                return jsonify(message="Вы не ввели индекс ученика!"), 400
+            
+            attendances = {'Attendances': [{'id': 'None', 'student_id': 'None', 'Discipline': {'id': 'None', 'name': 'None'},'time': "None", 'reason': 'None', 'checked': 'None'}]}
+            
+            attendance_db_read = codecs.open(Website.uploads + '/attendance.txt', 'r', encoding="utf-8")
+            lines = attendance_db_read.readlines()
+            attendance_db_read.close()
+            for line in lines:
+                cutLines = line.split(":")
+                if (cutLines[1] == student_index):
+                    checked = True
+                    if(cutLines[4] == "" or cutLines[4] == "Нет причины"):
+                        checked = False
+                    d_name = "None"
+                    disciplines_db_read = codecs.open(Website.uploads + '/disciplines.txt', 'r', encoding="utf-8")
+                    lines = disciplines_db_read.readlines()
+                    disciplines_db_read.close()
+                    for line in lines:
+                        dcutLines = line.split(":")
+                        if(dcutLines[0] == cutLines[2]):
+                            d_name = cutLines[1]
+                            break
+                    attendances['Attendances'].append(({'id': cutLines[0], 'student_id': cutLines[1], 'Discipline': {'id': cutLines[2], 'name': d_name}, 'time': cutLines[3], 'reason': cutLines[4], 'checked': checked}))
+            del attendances['Attendances'][0]
+            return json.dumps(attendances, sort_keys=False), 200
 
         #CLIENT!
         def getUnCheckedAttendance(self, student_index : str):
             pass
+
+        #CLIENT!
+        def getAllDisciplines(self):
+            disciplines_db_read = codecs.open(Website.uploads + '/disciplines.txt', 'r', encoding="utf-8")
+            lines = disciplines_db_read.readlines()
+            disciplines_db_read.close()
+            disciplines = {'Disciplines': [{'id': 'None', 'name': 'None'}]}
+            for line in lines:
+                cutLines = line.split(":")
+                disciplines['Disciplines'].append(({'id': cutLines[0], 'name': cutLines[1]}))
+            del disciplines["Disciplines"][0]
+            return json.dumps(disciplines,sort_keys=False), 200
         
     class Post:
 
         #ADMIN
-        def addAttendance(self, student_id : str, discipline_name : str, _datetime : str):
-            if(not student_id or not discipline_name or discipline_name.__contains__(":")):
-                print(self.addAttendance.__name__ + " неудачно!" + "\n")
+        def addAttendance(self, student_id : str, discipline_id : str, _datetime : str):
+            if(not student_id or not discipline_id):
                 return jsonify(message="Вы не введены корректные данные"), 400
+            
+            isStudent = False
+            isDiscipline = False
+            student_db_read = codecs.open(Website.uploads + '/students.txt', 'r', encoding="utf-8")
+            lines = student_db_read.readlines()
+            student_db_read.close()
+            for line in lines:
+                cutLines = line.split(":")
+                if(cutLines[0] == student_id):
+                    isStudent = True
+            if(not isStudent):
+                return jsonify(message="Такого ученика не существует"), 400
+
+            discipline_db_read = codecs.open(Website.uploads + '/disciplines.txt', 'r', encoding="utf-8")
+            lines = discipline_db_read.readlines()
+            discipline_db_read.close()
+            for line in lines:
+                cutLines = line.split(":")
+                if(cutLines[0] == discipline_id):
+                    isDiscipline = True
+            if(not isDiscipline):
+                return jsonify(message="Такой дисциплины не существует"), 400
+            
             attendance_db = codecs.open(Website.uploads + '/attendance.txt', 'a', encoding="utf-8")
             if(_datetime):
                 lines = _datetime.split("-") # это если приходит в формате 10-04-2023-12-30 где (10-04-2023) - дата, (12-30) - время
-                _datetime = lines[0] + "-" + lines[1] + "-" + lines[2] + "-" + lines[3] + " " + lines[4] + ":"
+                if(lines[0] and lines[1] and lines[2]and lines[3]and lines[4]):
+                    _datetime = lines[0] + "-" + lines[1] + "-" + lines[2] + "-" + lines[3] + "-" + lines[4]
+                else:
+                    return jsonify(message="Время не того формата"), 400
+            
             if(not _datetime):
-                now = datetime.now()
+                now = datetime.datetime.now()
                 _datetime = now.strftime("%d-%m-%Y-%H-%M")
+            
             attendance_db.writelines(Student.getRandomId() + ":" # это айди не студента а рандомное новое для посещаемости
-                                     + _datetime + ":"
                                      + student_id + ":"
-                                     + discipline_name + ":"
+                                     + discipline_id + ":"
+                                     + _datetime + ":"
                                      + "Нет причины" + ":" + "\n")
-            print(self.addAttendance.__name__ + " успешно!" + "\n")
-            jsonify(message="Успешное добавление прогула ученика под id " + student_id), 201
+            return jsonify(message="Успешный учет отсутствия ученика " + student_id), 201
 
         #ADMIN
         def addUser(self, user, status : str):
@@ -250,7 +301,6 @@ class Website:
         #ADMIN
         def addStudent(self, student : Student, group_id : str):
             if(not student.firstname or not student.lastname or not student.fathername or not group_id):
-                print(self.addStudent.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не ввели какие-то данные"), 400
             isGroup = False
             group_db_read = codecs.open(Website.uploads + '/groups.txt', 'r', encoding="utf-8")
@@ -262,7 +312,6 @@ class Website:
                     break
             group_db_read.close()
             if(not isGroup):
-                print(self.addStudent.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Не правильный индекс или название группы"), 400
 
             students_db_write = codecs.open(Website.uploads + '/students.txt', 'a', encoding="utf-8")
@@ -275,13 +324,11 @@ class Website:
             students_db_write.close()
             self.addUser(student, "student")
 
-            print(self.addStudent.__name__ + " удачно!" + "\n")
             return jsonify(message="Ученик " + student.lastname + " был добавлен под индексом " + student.id), 201
         
         #ADMIN
         def addTeacher(self, teacher : Teacher):
             if(not teacher.firstname or not teacher.lastname or not teacher.fathername):
-                print(self.addTeacher.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не ввели какие-то данные"), 400
 
             teachers_db_write = codecs.open(Website.uploads + '/teachers.txt', 'a', encoding="utf-8")
@@ -293,20 +340,15 @@ class Website:
             teachers_db_write.close()
             
             self.addUser(teacher, "teacher")
-            
-            print(self.addTeacher.__name__ + " удачно!" + "\n")
             return jsonify(message="Учитель " + teacher.lastname + " был добавлен под индексом " + str(teacher.id)), 201
         
         #ADMIN
         def addGroup(self, group : Group):
             if(not group.number):
-                print(self.addGroup.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не указали номер!"), 400
             if(not group.speciality):
-                print(self.addGroup.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не указали специальность!"), 400
             if(not group.course):
-                print(self.addGroup.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не указали курс группы!"), 400
 
             group_db_write = codecs.open(Website.uploads + '/groups.txt', 'a', encoding="utf-8")
@@ -317,7 +359,6 @@ class Website:
                                       + ":" + group.number
                                       + ":" + str(True) + ":" + "\n")
             group_db_write.close()
-            print(self.addGroup.__name__ + " удачно!" + "\n")
             return jsonify(message="Группа " + str(group) + " успешно добавлена под индексом " + group.id), 201
 
         #ADMIN
@@ -328,13 +369,11 @@ class Website:
         #ADMIN
         def addDiscipline(self, discipline : Discipline):
             if(discipline.name):
-                print(self.addDiscipline.__name__ + " неудачно!" + "\n")
                 return jsonify(message="Вы не ввели название дисциплины"), 400
             discipline_db_write = codecs.open(Website.uploads + '/disciplines.txt', 'a', encoding="utf-8")
             discipline_db_write.writelines(str(discipline.id) + ":"
                                            + discipline.name + ":" +"\n")
             discipline_db_write.close()
-            print(self.addDiscipline.__name__ + " удачно!" + "\n")
             return jsonify(message="Дисциплина " + str(discipline) + " успешно добавлена под индексом " + discipline.id), 201
         
     class Upload:

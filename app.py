@@ -8,12 +8,12 @@ from flask import Flask, jsonify, request, json
 from waitress import serve
 import socket 
 
-
 ###                                  ###
 ###            1) CONFIG:            ###
 ###                                  ###
 
 app = Flask(__name__, static_url_path='/static')
+
 website = Website("mywebsite")
 UPLOAD_FOLDER = '/uploads'
 
@@ -26,16 +26,6 @@ app.secret_key = b'/*/6379&63#=-;fg'
 ###                                  ###
 ###        2) ALL MAIN ROUTS:        ###
 ###                                  ###
-
-# RUN CONFIG
-# flask run --host=0.0.0.0 -p 8080
-if __name__ == '__main__':
-    hostname = socket.gethostname()
-    print(hostname)
-    print("Ip: "+ str(socket.gethostbyname(hostname)))
-    _port = 5000
-    print("Port: " + str(_port))
-    serve(app, port=_port, host="0.0.0.0")
 
 # TEST!
 @app.route('/routs',  methods=["GET"])
@@ -109,15 +99,15 @@ def addGroup():
 def addDiscipline():
     if(website.admin.getClientStatus() in {"admin", "teacher"}):
         discipline = Discipline(request.args.get("name"))
-        website.post.addDiscipline(discipline)
+        return website.post.addDiscipline(discipline)
     return jsonify(message="Вы не админ"), 400
 
-# ADMIN!
+# CLIENT!
 @app.route("/add-attendance", methods=["POST", "GET"])
 def addAttendance():
     if(website.admin.getClientStatus() in {"admin", "teacher"}):
-        website.post.addAttendance(request.args.get("student-id"), request.args.get("discipline"), request.args.get("time"))
-    return jsonify(message="Вы не админ"), 400
+        return website.post.addAttendance(request.args.get("student-id"), request.args.get("discipline-id"), request.args.get("time"))
+    return jsonify(message="Вы не учитель"), 400
 
 # CLIENT!
 @app.route("/login", methods=["POST", "GET"])
@@ -152,11 +142,24 @@ def getUser():
         return website.get.getUserById(request.args.get("student-id"))
     return jsonify(message="Вы не вошли в профиль"), 400
 
-# ПЕРЕДЕЛАТЬ НАФРЕН
+#CLIENT!
+@app.route("/api/get-all-attendance", methods=["POST", "GET"])
+def getAllAttendance():
+    if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
+        return website.get.getAllAttendance(request.args.get("student-id"))
+    return jsonify(message="Вы не залогинились"), 400
+
+#CLIENT!
 @app.route("/api/get-group", methods=["GET"])
 def getGroup():
     if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
-        return website.get.getGroupByName(request.args.get("group_name"))
+        return website.get.getGroupByIndex(request.args.get("group_index"))
+    return jsonify(message="Вы не учитель или ученик"), 400
+
+@app.route("/api/get-disciplines", methods=["GET"])
+def getDisciplines():
+    if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
+        return website.get.getAllDisciplines()
     return jsonify(message="Вы не учитель или ученик"), 400
 
 # CLIENT!
@@ -181,3 +184,13 @@ def getMyData():
 def page_not_found(e):
     # note that we set the 404 status explicitly
     return jsonify(message=str(e)), 404
+
+# RUN CONFIG
+# flask run --host=0.0.0.0 -p 8080
+if __name__ == '__main__':
+    hostname = socket.gethostname()
+    print(hostname)
+    print("Ip: "+ str(socket.gethostbyname(hostname)))
+    _port = 5000
+    print("Port: " + str(_port))
+    serve(app, port=_port, host="0.0.0.0")
