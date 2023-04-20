@@ -14,6 +14,9 @@ from colorama import Style
 import secrets
 import string
 import datetime
+import requests
+
+from dotenv import dotenv_values
 
 from transliterate import translit
 
@@ -21,6 +24,8 @@ alphabet = string.ascii_letters + string.digits
 class Website:
     name = ""
     uploads = "uploads" # на хосте "mysite/uploads"
+    secrets = dotenv_values(uploads + ".env")
+    onesignal_url = "https://onesignal.com/api/v1/notifications"
     def __init__(self, name : str):
         self.name = name
         self.post = self.Post()
@@ -197,7 +202,7 @@ class Website:
             jsonify(message="Такой группы не существует!"), 400
 
         #CLIENT!
-        def getAllAttendance(self, student_index : str):
+        def getCheckedAttendance(self, student_index : str):
             if(not student_index):
                 return jsonify(message="Вы не ввели индекс ученика!"), 400
             
@@ -208,10 +213,8 @@ class Website:
             attendance_db_read.close()
             for line in lines:
                 cutLines = line.split(":")
-                if (cutLines[1] == student_index):
+                if (cutLines[1] == student_index and cutLines[4] != "" and cutLines[4] != "Нет причины"):
                     checked = True
-                    if(cutLines[4] == "" or cutLines[4] == "Нет причины"):
-                        checked = False
                     d_name = "None"
                     disciplines_db_read = codecs.open(Website.uploads + '/disciplines.txt', 'r', encoding="utf-8")
                     lines = disciplines_db_read.readlines()
@@ -219,7 +222,7 @@ class Website:
                     for line in lines:
                         dcutLines = line.split(":")
                         if(dcutLines[0] == cutLines[2]):
-                            d_name = cutLines[1]
+                            d_name = dcutLines[1]
                             break
                     attendances['Attendances'].append(({'id': cutLines[0], 'student_id': cutLines[1], 'Discipline': {'id': cutLines[2], 'name': d_name}, 'time': cutLines[3], 'reason': cutLines[4], 'checked': checked}))
             del attendances['Attendances'][0]
@@ -227,7 +230,30 @@ class Website:
 
         #CLIENT!
         def getUnCheckedAttendance(self, student_index : str):
-            pass
+            if(not student_index):
+                return jsonify(message="Вы не ввели индекс ученика!"), 400
+            
+            attendances = {'Attendances': [{'id': 'None', 'student_id': 'None', 'Discipline': {'id': 'None', 'name': 'None'},'time': "None", 'reason': 'None', 'checked': 'None'}]}
+            
+            attendance_db_read = codecs.open(Website.uploads + '/attendance.txt', 'r', encoding="utf-8")
+            lines = attendance_db_read.readlines()
+            attendance_db_read.close()
+            for line in lines:
+                cutLines = line.split(":")
+                if (cutLines[1] == student_index and (cutLines[4] == "" or cutLines[4] == "Нет причины")):
+                    checked = False
+                    d_name = "None"
+                    disciplines_db_read = codecs.open(Website.uploads + '/disciplines.txt', 'r', encoding="utf-8")
+                    lines = disciplines_db_read.readlines()
+                    disciplines_db_read.close()
+                    for line in lines:
+                        dcutLines = line.split(":")
+                        if(dcutLines[0] == cutLines[2]):
+                            d_name = dcutLines[1]
+                            break
+                    attendances['Attendances'].append(({'id': cutLines[0], 'student_id': cutLines[1], 'Discipline': {'id': cutLines[2], 'name': d_name}, 'time': cutLines[3], 'reason': cutLines[4], 'checked': checked}))
+            del attendances['Attendances'][0]
+            return json.dumps(attendances, sort_keys=False), 200
 
         #CLIENT!
         def getAllDisciplines(self):
@@ -242,34 +268,34 @@ class Website:
             return json.dumps(disciplines,sort_keys=False), 200
         
     class Post:
-
         #ADMIN
         def addAttendance(self, student_id : str, discipline_id : str, _datetime : str):
             if(not student_id or not discipline_id):
                 return jsonify(message="Вы не введены корректные данные"), 400
-            
             isStudent = False
             isDiscipline = False
             student_db_read = codecs.open(Website.uploads + '/students.txt', 'r', encoding="utf-8")
             lines = student_db_read.readlines()
             student_db_read.close()
+            student_name = ""
             for line in lines:
                 cutLines = line.split(":")
                 if(cutLines[0] == student_id):
                     isStudent = True
+                    student_name = cutLines[3]
             if(not isStudent):
                 return jsonify(message="Такого ученика не существует"), 400
-
             discipline_db_read = codecs.open(Website.uploads + '/disciplines.txt', 'r', encoding="utf-8")
             lines = discipline_db_read.readlines()
             discipline_db_read.close()
+            discipline_name = ""
             for line in lines:
                 cutLines = line.split(":")
                 if(cutLines[0] == discipline_id):
                     isDiscipline = True
+                    discipline_name = cutLines[1]
             if(not isDiscipline):
                 return jsonify(message="Такой дисциплины не существует"), 400
-            
             attendance_db = codecs.open(Website.uploads + '/attendance.txt', 'a', encoding="utf-8")
             if(_datetime):
                 lines = _datetime.split("-") # это если приходит в формате 10-04-2023-12-30 где (10-04-2023) - дата, (12-30) - время
@@ -277,18 +303,34 @@ class Website:
                     _datetime = lines[0] + "-" + lines[1] + "-" + lines[2] + "-" + lines[3] + "-" + lines[4]
                 else:
                     return jsonify(message="Время не того формата"), 400
-            
             if(not _datetime):
                 now = datetime.datetime.now()
                 _datetime = now.strftime("%d-%m-%Y-%H-%M")
-            
             attendance_db.writelines(Student.getRandomId() + ":" # это айди не студента а рандомное новое для посещаемости
                                      + student_id + ":"
                                      + discipline_id + ":"
                                      + _datetime + ":"
                                      + "Нет причины" + ":" + "\n")
+            payload = {
+                "app_id": Website.secrets["APP_ID"],
+                "include_external_user_ids": [student_id],
+                "channel_for_external_user_ids": "push",
+                "isAndroid": True,
+                "contents": {
+                    "ru": student_name + ", у вас новый прогул за " + _datetime + "\n" + "Укажите причину отсутствия!",
+                    "en": student_name + ", у вас новый прогул за " + _datetime + "\n" + "Укажите причину отсутствия!"
+                },
+                "name": "ВашаПосещаемость"
+            }
+            headers = {
+                "accept": "application/json",
+                "Authorization": "Basic " + Website.secrets["API_KEY"],
+                "content-type": "application/json"
+            }
+            response = requests.post(Website.onesignal_url, json=payload, headers=headers)
+            print("Отправка уведомления: " + response.text)
             return jsonify(message="Успешный учет отсутствия ученика " + student_id), 201
-
+        
         #ADMIN
         def addUser(self, user, status : str):
             users_db_write = codecs.open(Website.uploads + '/users.txt', 'a', encoding="utf-8")
@@ -383,8 +425,29 @@ class Website:
             pass
 
         #Client!
-        def updateAttendanceReason(self, reason : str):
-            pass
+        def updateAttendanceReason(self, attendance_id : str, reason : str):
+            if(not attendance_id or not reason):
+                return jsonify(message="Вы не ввели данные"), 201
+            with codecs.open(Website.uploads + '/attendance.txt', 'r', encoding='utf-8') as file:
+                data = file.readlines()
+            
+            time = ""
+            for index, line in enumerate(data):
+                data[index] = line.strip() + "\n"
+                cutLines = line.split(":")
+                if (cutLines[0] == attendance_id):
+                    acutLines = line.split(":")
+                    time = acutLines[3]
+                    newLine = acutLines[0] + ":" + acutLines[1] + ":" + acutLines[2] + ":" + acutLines[3] + ":" + reason + ":" + "\n"
+                    data[index] = newLine
+            
+            with open(Website.uploads + '/attendance.txt', 'w', encoding='utf-8') as file:
+                file.writelines(data)
+
+            if(time != ""):
+                return jsonify(message="Отмечена причина отсутствия за " + time), 201
+            else:
+                return jsonify(message="Не существует отсутствия под таким индексом!"), 201
 
         #Client!
         def updateUserLogin(self, login : str, user_password : str):

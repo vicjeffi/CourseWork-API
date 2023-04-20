@@ -54,7 +54,7 @@ def addUser():
                       request.args.get("lastname"), 
                       request.args.get("fathername"))
         return website.post.addStudent(student, group_id)
-    return jsonify(message="Вы не админ"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 # ADMIN!
 @app.route("/add-student", methods=["POST", "GET"])
@@ -65,23 +65,13 @@ def addStudent():
                       request.args.get("lastname"), 
                       request.args.get("fathername"))
         return website.post.addStudent(student, group_id)
-    return jsonify(message="Вы не админ"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 # TEST!
 # GET RANDOM ID
 @app.route("/test", methods=["POST", "GET"])
 def test():
     return Student.getRandomId()
-
-# TEST!
-@app.route("/test6", methods=["POST", "GET"])
-def test6():
-    student1 = Student("Vic", "Jeff", "Methon")
-    student2 = Student("Heron", "Lite", "Billirson")
-    myDict = {'Student': [{'id': student1.id, 'firstname': student1.firstname, 'lastname': student1.lastname, 'fathername': student1.fathername}]}
-    myDict['Student'].append(({'id': student2.id, 'firstname': student2.firstname, 'lastname': student2.lastname, 'fathername': student2.fathername}))
-    test = json.dumps(myDict,sort_keys=False)
-    return test, 200
 
 # ADMIN!
 # Проверить с 19 марта
@@ -92,7 +82,7 @@ def addGroup():
                   request.args.get("number"))
     if(website.admin.getClientStatus() in {"admin", "teacher"}):
         return website.post.addGroup(group)
-    return jsonify(message="Вы не админ"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 # ADMIN!
 @app.route("/add-discipline", methods=["POST", "GET"])
@@ -100,14 +90,14 @@ def addDiscipline():
     if(website.admin.getClientStatus() in {"admin", "teacher"}):
         discipline = Discipline(request.args.get("name"))
         return website.post.addDiscipline(discipline)
-    return jsonify(message="Вы не админ"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 # CLIENT!
 @app.route("/add-attendance", methods=["POST", "GET"])
 def addAttendance():
     if(website.admin.getClientStatus() in {"admin", "teacher"}):
         return website.post.addAttendance(request.args.get("student-id"), request.args.get("discipline-id"), request.args.get("time"))
-    return jsonify(message="Вы не учитель"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 # CLIENT!
 @app.route("/login", methods=["POST", "GET"])
@@ -133,20 +123,27 @@ def adminUnlogin():
 def getStudents():
     if(website.admin.getClientStatus() in {"admin", "teacher"}):
         return website.get.getStudentsByGroup(request.args.get("group-id"))
-    return jsonify(message="Вы не учитель"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 #CLIENT!
-@app.route("/api/get-user-by-ids", methods=["GET"])
+@app.route("/api/get-user-by-ids", methods=["POST", "GET"])
 def getUser():
     if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
         return website.get.getUserById(request.args.get("student-id"))
     return jsonify(message="Вы не вошли в профиль"), 400
 
 #CLIENT!
-@app.route("/api/get-all-attendance", methods=["POST", "GET"])
-def getAllAttendance():
+@app.route("/api/get-unchecked-attendance", methods=["POST", "GET"])
+def getUnCheckedAttendance():
     if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
-        return website.get.getAllAttendance(request.args.get("student-id"))
+        return website.get.getUnCheckedAttendance(request.args.get("student-id"))
+    return jsonify(message="Вы не залогинились"), 400
+
+#CLIENT!
+@app.route("/api/get-checked-attendance", methods=["POST", "GET"])
+def getCheckedAttendance():
+    if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
+        return website.get.getCheckedAttendance(request.args.get("student-id"))
     return jsonify(message="Вы не залогинились"), 400
 
 #CLIENT!
@@ -160,21 +157,24 @@ def getGroup():
 def getDisciplines():
     if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
         return website.get.getAllDisciplines()
-    return jsonify(message="Вы не учитель или ученик"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 # CLIENT!
 @app.route("/api/my-data", methods=["GET"])
 def getMyData():
     if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
         return website.get.getUserById(website.admin.getClientId())
-    return jsonify(message="Вы не вошли в профиль"), 400
+    return jsonify(message="Вы не залогинились"), 400
 
 ###                                  ###
 ###            2.3) UPLOADS:         ###
 ###                                  ###
 
-# ... в будующем ...
-
+@app.route("/upload/attendance-reason", methods=["GET"])
+def updateAttendanceReason():
+    if(website.admin.getClientStatus() in {"admin", "teacher", "student"}):
+        return website.upload.updateAttendanceReason(request.args.get("attendance-id"), request.args.get("reason"))
+    return jsonify(message="Вы не залогинились"), 400
 ###                                  ###
 ###            3) OTHERS:            ###
 ###                                  ###
