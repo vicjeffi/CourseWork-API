@@ -23,8 +23,8 @@ from transliterate import translit
 alphabet = string.ascii_letters + string.digits
 class Website:
     name = ""
-    uploads = "uploads" # на хосте "mysite/uploads"
-    secrets = dotenv_values(uploads + ".env")
+    uploads =  "uploads" #"mysite/uploads"
+    secrets = dotenv_values("mysite/" + ".env")
     onesignal_url = "https://onesignal.com/api/v1/notifications"
     def __init__(self, name : str):
         self.name = name
@@ -86,14 +86,18 @@ class Website:
         def Unlogin(self, ip = ""):
             if(ip == ""):
                 ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-            with open(Website.uploads + "/login.txt", "r+") as f:
-                d = f.readlines()
-                f.seek(0)
-                for i in d:
-                    if i.__contains__(ip):
-                        print(Fore.LIGHTCYAN_EX + "Пользователь вышел из профиля: " + i + Style.RESET_ALL)
-                        f.write("")
-                f.truncate()
+            with codecs.open(Website.uploads + '/login.txt', 'r', encoding='utf-8') as file:
+                data = file.readlines()
+
+            for index, line in enumerate(data):
+                data[index] = line.strip() + "\n"
+                cutLines = line.split(":")
+                if (cutLines[0] == ip):
+                    newLine = ""
+                    data[index] = newLine
+
+            with open(Website.uploads + '/login.txt', 'w', encoding='utf-8') as file:
+                file.writelines(data)
 
         # CLIENT!
         def LoginAdd(self, ip : str, status : str, id : str):
@@ -168,7 +172,7 @@ class Website:
         def getStudentsByGroup(self, group_index : str):
             if(not group_index ):
                 return jsonify(message="Вы не ввели индекс группы"), 400
-            
+
             myDict = {'Student': [{'id': 'None', 'firstname': 'None', 'lastname': 'None', 'fathername': 'None'}]}
             #
             #test = json.dumps(myDict,sort_keys=False)
@@ -205,9 +209,9 @@ class Website:
         def getCheckedAttendance(self, student_index : str):
             if(not student_index):
                 return jsonify(message="Вы не ввели индекс ученика!"), 400
-            
+
             attendances = {'Attendances': [{'id': 'None', 'student_id': 'None', 'Discipline': {'id': 'None', 'name': 'None'},'time': "None", 'reason': 'None', 'checked': 'None'}]}
-            
+
             attendance_db_read = codecs.open(Website.uploads + '/attendance.txt', 'r', encoding="utf-8")
             lines = attendance_db_read.readlines()
             attendance_db_read.close()
@@ -232,9 +236,9 @@ class Website:
         def getUnCheckedAttendance(self, student_index : str):
             if(not student_index):
                 return jsonify(message="Вы не ввели индекс ученика!"), 400
-            
+
             attendances = {'Attendances': [{'id': 'None', 'student_id': 'None', 'Discipline': {'id': 'None', 'name': 'None'},'time': "None", 'reason': 'None', 'checked': 'None'}]}
-            
+
             attendance_db_read = codecs.open(Website.uploads + '/attendance.txt', 'r', encoding="utf-8")
             lines = attendance_db_read.readlines()
             attendance_db_read.close()
@@ -266,7 +270,7 @@ class Website:
                 disciplines['Disciplines'].append(({'id': cutLines[0], 'name': cutLines[1]}))
             del disciplines["Disciplines"][0]
             return json.dumps(disciplines,sort_keys=False), 200
-        
+
     class Post:
         #ADMIN
         def addAttendance(self, student_id : str, discipline_id : str, _datetime : str):
@@ -317,8 +321,7 @@ class Website:
                 "channel_for_external_user_ids": "push",
                 "isAndroid": True,
                 "contents": {
-                    "ru": student_name + ", у вас новый прогул за " + _datetime + "\n" + "Укажите причину отсутствия!",
-                    "en": student_name + ", у вас новый прогул за " + _datetime + "\n" + "Укажите причину отсутствия!"
+                    "en": student_name + ", у вас новый прогул за " + _datetime + "\n" + discipline_name +" Укажите причину отсутствия!"
                 },
                 "name": "ВашаПосещаемость"
             }
@@ -330,7 +333,7 @@ class Website:
             response = requests.post(Website.onesignal_url, json=payload, headers=headers)
             print("Отправка уведомления: " + response.text)
             return jsonify(message="Успешный учет отсутствия ученика " + student_id), 201
-        
+
         #ADMIN
         def addUser(self, user, status : str):
             users_db_write = codecs.open(Website.uploads + '/users.txt', 'a', encoding="utf-8")
@@ -367,7 +370,7 @@ class Website:
             self.addUser(student, "student")
 
             return jsonify(message="Ученик " + student.lastname + " был добавлен под индексом " + student.id), 201
-        
+
         #ADMIN
         def addTeacher(self, teacher : Teacher):
             if(not teacher.firstname or not teacher.lastname or not teacher.fathername):
@@ -380,10 +383,10 @@ class Website:
                                          + teacher.fathername + ":"
                                          + str(True) + ":" + "\n")
             teachers_db_write.close()
-            
+
             self.addUser(teacher, "teacher")
             return jsonify(message="Учитель " + teacher.lastname + " был добавлен под индексом " + str(teacher.id)), 201
-        
+
         #ADMIN
         def addGroup(self, group : Group):
             if(not group.number):
@@ -417,7 +420,7 @@ class Website:
                                            + discipline.name + ":" +"\n")
             discipline_db_write.close()
             return jsonify(message="Дисциплина " + str(discipline) + " успешно добавлена под индексом " + discipline.id), 201
-        
+
     class Upload:
 
         #Client!
@@ -430,7 +433,7 @@ class Website:
                 return jsonify(message="Вы не ввели данные"), 201
             with codecs.open(Website.uploads + '/attendance.txt', 'r', encoding='utf-8') as file:
                 data = file.readlines()
-            
+
             time = ""
             for index, line in enumerate(data):
                 data[index] = line.strip() + "\n"
@@ -440,7 +443,7 @@ class Website:
                     time = acutLines[3]
                     newLine = acutLines[0] + ":" + acutLines[1] + ":" + acutLines[2] + ":" + acutLines[3] + ":" + reason + ":" + "\n"
                     data[index] = newLine
-            
+
             with open(Website.uploads + '/attendance.txt', 'w', encoding='utf-8') as file:
                 file.writelines(data)
 
